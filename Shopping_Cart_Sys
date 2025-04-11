@@ -1,0 +1,156 @@
+import tkinter as tk
+from tkinter import messagebox
+
+# Product Class
+class Product:
+    def __init__(self, name, price):
+        self._name = name
+        self._price = price
+
+    def get_price(self):
+        return self._price
+
+    def get_name(self):
+        return self._name
+
+    def calculate_discount(self):
+        return 0
+
+# Discounts for each category, discounts are automatically applied
+class Shoes(Product):
+    def calculate_discount(self):
+        return self._price * 0.10 # 10% Discount
+
+class Clothing(Product):
+    def calculate_discount(self):
+        return self._price * 0.05 # 5% Discount
+
+class Jewelry(Product):
+    def calculate_discount(self):
+        return self._price * 0.15 # 15% Discount
+
+# Shopping Cart Class
+class ShoppingCart:
+    def __init__(self):
+        self._items = {} # dictionary for storing product and quantity
+
+    def add_item(self, product):
+        if product in self._items:
+            self._items[product] += 1
+        else:
+            self._items[product] = 1
+
+    def remove_item(self, product):
+        if product in self._items:
+            if self._items[product] > 1:
+                self._items[product] -= 1
+            else:
+                del self._items[product] # removes product if quantity is 0
+
+    def calculate_total(self):
+        total = sum(product.get_price() * quantity for product, quantity in self._items.items())
+        total_discount = sum(product.calculate_discount() * quantity for product, quantity in self._items.items())
+        return total - total_discount
+
+    def get_items(self):
+        return self._items
+
+    def clear_cart(self):
+        self._items = {}
+
+# GUI Implementation
+class ShoppingCartGUI:
+    def __init__(self, window):
+        self.cart = ShoppingCart()
+        self.window = window
+        self.window.title("Shopping Cart")
+
+        # Product List Section
+        self.products_label = tk.Label(window, text = "Available Products", font = ("Arial Black", 16))
+        self.products_label.pack()
+
+        self.products_frame = tk.Frame(window)
+        self.products_frame.pack()
+
+        # List of products with their prices
+        self.products = {
+            "Shoes": [
+                Shoes("Jordan 3 'Clement'", 250),
+                Shoes("Nike 'OFF-WHITE' Dunk", 760),
+                Shoes("Balenciaga Runners", 1100),
+                Shoes("Asics Gel-Kayano 14", 180),
+            ],
+            "Clothing": [
+                Clothing("Fear of God Essentials Hoodie", 200),
+                Clothing("Supreme North Face Jacket", 570),
+                Clothing("Under Armor Quarter Zip", 70),
+            ],
+            "Jewelry": [
+                Jewelry("Silver Cuban Chain", 150),
+                Jewelry("Gold Chain with Star Pendant", 200),
+                Jewelry("Omega Black Watch", 650),
+            ],
+        }
+
+        for category, items in self.products.items():
+            tk.Label(self.products_frame, text = category, font = ("Arial Black", 14)).pack(anchor = "w")
+            for product in items:
+                btn = tk.Button(
+                    self.products_frame,
+                    text = f"{product.get_name()} - ${product.get_price()}",
+                    command = lambda p = product: self.add_to_cart(p),
+                    )
+                btn.pack(anchor = "w")
+
+        # Cart Section
+        self.cart_label = tk.Label(window, text = "Shopping Cart", font = ("Arial Black", 16))
+        self.cart_label.pack()
+
+        self.cart_listbox = tk.Listbox(window, width = 50, height = 10)
+        self.cart_listbox.pack()
+
+        self.total_label = tk.Label(window, text = "Total: $0.00", font = ("Arial Black", 14))
+        self.total_label.pack()
+
+        self.remove_button = tk.Button(window, text = "Remove Item", command = self.remove_selected_item)
+        self.remove_button.pack()
+
+        self.checkout_button = tk.Button(window, text = "Checkout", command = self.checkout)
+        self.checkout_button.pack()
+
+    def add_to_cart(self, product):
+        self.cart.add_item(product)
+        self.update_cart()
+
+    def update_cart(self):
+        self.cart_listbox.delete(0, tk.END)
+        for product, quantity in self.cart.get_items().items():
+            self.cart_listbox.insert(tk.END, f"{product.get_name()} x {quantity} - ${product.get_price()}")
+        total = self.cart.calculate_total()
+        self.total_label.config(text = f"Total: ${total:.2f}")
+
+    def remove_selected_item(self):
+        selected = self.cart_listbox.curselection()
+        if selected:
+            index = selected[0] # to get the index of selected item
+            items_list = list(self.cart.get_items().items()) # converts to a list of tuples
+            item_to_remove, quantity = items_list[index]
+            self.cart.remove_item(item_to_remove) # removes one quantity of the product
+            self.update_cart()
+        else:
+            messagebox.showwarning("Remove Item", "Please select an item to remove.")
+
+    def checkout(self):
+        total = self.cart.calculate_total()
+        if total > 0:
+            messagebox.showinfo("Checkout", f"Total amount: ${total:.2f}")
+            self.cart = ShoppingCart()
+            self.update_cart()
+        else:
+            messagebox.showwarning("Checkout", "Your cart is empty")
+
+# Execution Code
+if __name__ == "__main__":
+    window = tk.Tk()
+    app = ShoppingCartGUI(window)
+    window.mainloop()
